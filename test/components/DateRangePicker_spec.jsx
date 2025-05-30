@@ -18,6 +18,10 @@ import {
 
 import describeIfWindow from '../_helpers/describeIfWindow';
 
+// NOTE: A React Testing Library version of these tests is available at:
+// test/components/DateRangePicker_rtl_spec.jsx
+
+
 class DateRangePickerWrapper extends React.Component {
   constructor(props) {
     super(props);
