@@ -18,6 +18,7 @@ import {
 
 import describeIfWindow from '../_helpers/describeIfWindow';
 
+
 class DateRangePickerWrapper extends React.Component {
   constructor(props) {
     super(props);
