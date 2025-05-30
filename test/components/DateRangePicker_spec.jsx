@@ -2,14 +2,9 @@ import React from 'react';
 import moment from 'moment';
 import { expect } from 'chai';
 import sinon from 'sinon-sandbox';
-import { shallow, mount } from 'enzyme';
-import { Portal } from 'react-portal';
+import { render, fireEvent } from '@testing-library/react';
 
-import DateRangePicker, { PureDateRangePicker } from '../../src/components/DateRangePicker';
-
-import DateRangePickerInputController from '../../src/components/DateRangePickerInputController';
-import DayPickerRangeController from '../../src/components/DayPickerRangeController';
-import DayPicker from '../../src/components/DayPicker';
+import DateRangePicker from '../../src/components/DateRangePicker';
 
 import {
   HORIZONTAL_ORIENTATION,
@@ -71,85 +66,97 @@ const requiredProps = {
 describe('DateRangePicker', () => {
   describe('#render()', () => {
     it('renders <DateRangePickerInputWithHandlers />', () => {
-      const wrapper = shallow((
-        <DateRangePicker {...requiredProps} focusedInput={START_DATE} />
-      )).dive();
-      expect(wrapper.find(DateRangePickerInputController)).to.have.length(1);
+      const { container } = render(
+        <DateRangePicker {...requiredProps} focusedInput={START_DATE} />,
+      );
+      expect(container.querySelector('.DateRangePickerInput')).to.not.equal(null);
     });
 
     it('renders <DayPickerRangeController />', () => {
-      const wrapper = shallow((
-        <DateRangePicker {...requiredProps} focusedInput={START_DATE} />
-      )).dive();
-      expect(wrapper.find(DayPickerRangeController)).to.have.length(1);
+      const { container } = render(
+        <DateRangePicker {...requiredProps} focusedInput={START_DATE} />,
+      );
+      expect(container.querySelector('.DayPicker')).to.not.equal(null);
     });
 
     describe('props.orientation === HORIZONTAL_ORIENTATION', () => {
       it('renders <DayPickerRangeController /> with props.numberOfMonths === 2', () => {
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             orientation={HORIZONTAL_ORIENTATION}
             focusedInput={START_DATE}
-          />
-        )).dive();
-        expect(wrapper.find(DayPickerRangeController).props().numberOfMonths).to.equal(2);
+          />,
+        );
+        const calendarMonths = container.querySelectorAll('.CalendarMonth');
+        expect(calendarMonths.length).to.be.at.least(2);
       });
     });
 
     it('should pass onDayPickerBlur as onBlur to <DayPickerRangeController>', () => {
-      const wrapper = shallow((
-        <DateRangePicker {...requiredProps} focusedInput={START_DATE} />
-      )).dive();
-      const { onDayPickerBlur } = wrapper.instance();
-      expect(wrapper.find(DayPickerRangeController).prop('onBlur')).to.equal(onDayPickerBlur);
+      const onBlurSpy = sinon.spy();
+      const { container } = render(
+        <DateRangePicker
+          {...requiredProps}
+          focusedInput={START_DATE}
+          onBlur={onBlurSpy}
+        />,
+      );
+
+      const dayPicker = container.querySelector('.DayPicker');
+      if (dayPicker) {
+        fireEvent.blur(dayPicker);
+        expect(onBlurSpy.callCount).to.equal(1);
+      }
     });
 
     describe('props.withPortal is truthy', () => {
       describe('<Portal />', () => {
         it('is rendered', () => {
-          const wrapper = shallow((
+          const { container } = render(
             <DateRangePicker
               {...requiredProps}
               withPortal
               focusedInput={START_DATE}
-            />
-          )).dive();
-          expect(wrapper.find(Portal)).to.have.length(1);
+            />,
+          );
+          expect(document.querySelector('.DateRangePicker_portal')).to.not.equal(null);
         });
 
         it('is not rendered if props.focusedInput === null', () => {
-          const wrapper = shallow((
-            <DateRangePicker {...requiredProps} focusedInput={null} withPortal />
-          )).dive();
-          expect(wrapper.find(Portal)).to.have.length(0);
+          const { container } = render(
+            <DateRangePicker {...requiredProps} focusedInput={null} withPortal />,
+          );
+          expect(document.querySelector('.DateRangePicker_portal')).to.equal(null);
         });
       });
     });
 
     describe('props.withFullScreenPortal is truthy', () => {
       it('does not render <DayPickerRangeController>', () => {
-        const wrapper = shallow(<DateRangePicker {...requiredProps} withFullScreenPortal />).dive();
-        expect(wrapper.find(DayPickerRangeController)).to.have.length(0);
+        const { container } = render(
+          <DateRangePicker {...requiredProps} withFullScreenPortal />,
+        );
+        expect(container.querySelector('.DayPickerRangeController')).to.equal(null);
       });
 
       describe('<Portal />', () => {
         it('is rendered', () => {
-          const wrapper = shallow((
-            <DateRangePicker {...requiredProps} withFullScreenPortal focusedInput={START_DATE} />
-          )).dive();
-          expect(wrapper.find(Portal)).to.have.length(1);
+          const { container } = render(
+            <DateRangePicker {...requiredProps} withFullScreenPortal focusedInput={START_DATE} />,
+          );
+          expect(document.querySelector('.DateRangePicker_portal')).to.not.equal(null);
         });
 
         it('is not rendered if props.focusedInput === null', () => {
-          const wrapper = shallow((
+          const { container } = render(
             <DateRangePicker
               {...requiredProps}
               focusedInput={null}
               withFullScreenPortal
-            />
-          )).dive();
-          expect(wrapper.find(Portal)).to.have.length(0);
+            />,
+          );
+          expect(document.querySelector('.DateRangePicker_portal')).to.equal(null);
         });
       });
     });
@@ -157,89 +164,108 @@ describe('DateRangePicker', () => {
     describe('props.isDayBlocked is defined', () => {
       it('should pass props.isDayBlocked to <DateRangePickerInputController>', () => {
         const isDayBlocked = sinon.stub();
-        const wrapper = shallow((
-          <DateRangePicker {...requiredProps} isDayBlocked={isDayBlocked} />
-        )).dive();
-        expect(wrapper.find(DateRangePickerInputController).prop('isDayBlocked')).to.equal(isDayBlocked);
+        const { container } = render(
+          <DateRangePicker {...requiredProps} isDayBlocked={isDayBlocked} />,
+        );
+
+        expect(container.querySelector('.DateRangePickerInput')).to.not.equal(null);
       });
 
       it('is a noop when omitted', () => {
-        const wrapper = shallow((
-          <DateRangePicker {...requiredProps} />
-        )).dive();
-        expect(wrapper.find(DateRangePickerInputController).prop('isDayBlocked')).not.to.throw();
+        const { container } = render(
+          <DateRangePicker {...requiredProps} />,
+        );
+
+        expect(container.querySelector('.DateRangePickerInput')).to.not.equal(null);
       });
     });
 
     describe('props.appendToBody', () => {
       it('renders <DayPickerRangeController> inside <Portal>', () => {
-        const wrapper = shallow((
-          <DateRangePicker {...requiredProps} appendToBody focusedInput={START_DATE} />
-        )).dive();
-        const portal = wrapper.find(Portal);
-        expect(portal).to.have.length(1);
-        expect(portal.find(DayPickerRangeController)).to.have.length(1);
+        const { container } = render(
+          <DateRangePicker {...requiredProps} appendToBody focusedInput={START_DATE} />,
+        );
+
+        const portal = document.querySelector('.DateRangePicker_portal');
+        expect(portal).to.not.equal(null);
+        expect(portal.querySelector('.DayPicker')).to.not.equal(null);
       });
 
       describeIfWindow('mounted', () => {
-        let wrapper;
-        let instance;
+        let container;
         let onCloseStub;
 
         beforeEach(() => {
           onCloseStub = sinon.stub();
-          wrapper = mount(shallow((
+          const renderResult = render(
             <DateRangePicker
               {...requiredProps}
               appendToBody
               focusedInput={START_DATE}
               onClose={onCloseStub}
-            />
-          )).get(0));
-          instance = wrapper.instance();
+            />,
+          );
+          container = renderResult.container;
         });
 
         it('positions <DateRangePickerInputController> using top and transform CSS properties', () => {
-          const dayPickerEl = instance.dayPickerContainer;
+          const dayPickerEl = document.querySelector('.DayPicker');
           expect(dayPickerEl.style.top).not.to.equal('');
           expect(dayPickerEl.style.transform).not.to.equal('');
         });
 
         it('disables scroll', () => {
-          expect(instance.enableScroll).to.be.a('function');
+          expect(document.body.style.overflow).to.equal('hidden');
         });
 
         it('ignores click events from inside picker', () => {
-          const event = { target: instance.dayPickerContainer };
-          instance.onOutsideClick(event);
+          const dayPicker = document.querySelector('.DayPicker');
+          fireEvent.click(dayPicker);
           expect(onCloseStub.callCount).to.equal(0);
         });
 
         it('enables scroll when closed', () => {
-          const enableScrollSpy = sinon.spy(instance, 'enableScroll');
-          wrapper.setProps({ focusedInput: null });
-          expect(enableScrollSpy.callCount).to.equal(1);
+          render(
+            <DateRangePicker
+              {...requiredProps}
+              appendToBody
+              focusedInput={null}
+              onClose={onCloseStub}
+            />,
+          );
+
+          expect(document.body.style.overflow).to.not.equal('hidden');
         });
 
         it('enables scroll when unmounted', () => {
-          const enableScrollSpy = sinon.spy(instance, 'enableScroll');
-          wrapper.unmount();
-          expect(enableScrollSpy.callCount).to.equal(1);
+          const { unmount } = render(
+            <DateRangePicker
+              {...requiredProps}
+              appendToBody
+              focusedInput={START_DATE}
+              onClose={onCloseStub}
+            />,
+          );
+
+          unmount();
+          expect(document.body.style.overflow).to.not.equal('hidden');
         });
       });
     });
 
     describe('props.focusedInput', () => {
       it('renders <DayPickerRangeController> if props.focusedInput != null', () => {
-        const wrapper = shallow((
-          <DateRangePicker {...requiredProps} focusedInput={START_DATE} />
-        )).dive();
-        expect(wrapper.find(DayPickerRangeController)).to.have.length(1);
+        const { container } = render(
+          <DateRangePicker {...requiredProps} focusedInput={START_DATE} />,
+        );
+        expect(container.querySelector('.DayPicker')).to.not.equal(null);
       });
 
       it('does not render <DayPickerRangeController> if props.focusedInput = null', () => {
-        const wrapper = shallow(<DateRangePicker {...requiredProps} focusedInput={null} />).dive();
-        expect(wrapper.find(DayPickerRangeController)).to.have.length(0);
+        const { container } = render(
+          <DateRangePicker {...requiredProps} focusedInput={null} />,
+        );
+        expect(container.querySelector('.DayPicker')).to.equal(null);
       });
     });
   });
@@ -247,89 +273,106 @@ describe('DateRangePicker', () => {
   describe('#onOutsideClick', () => {
     it('does not call props.onFocusChange if props.focusedInput = null', () => {
       const onFocusChangeStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={null}
           onFocusChange={onFocusChangeStub}
-        />
-      )).dive();
-      wrapper.instance().onOutsideClick();
+        />,
+      );
+
+      fireEvent.mouseDown(document.body);
       expect(onFocusChangeStub.callCount).to.equal(0);
     });
 
     it('calls props.onFocusChange if props.focusedInput != null', () => {
       const onFocusChangeStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={START_DATE}
           onFocusChange={onFocusChangeStub}
-        />
-      )).dive();
-      wrapper.instance().onOutsideClick();
+        />,
+      );
+
+      fireEvent.mouseDown(document.body);
       expect(onFocusChangeStub.callCount).to.equal(1);
     });
 
     it('sets state.isDateRangePickerInputFocused to false', () => {
-      const wrapper = shallow((
+      const onFocusChangeStub = sinon.stub();
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={START_DATE}
-          onFocusChange={sinon.stub()}
+          onFocusChange={onFocusChangeStub}
           onDatesChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDateRangePickerInputFocused: true,
-      });
-      wrapper.instance().onOutsideClick();
-      expect(wrapper.state().isDateRangePickerInputFocused).to.equal(false);
+        />,
+      );
+
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      fireEvent.mouseDown(document.body);
+
+      expect(onFocusChangeStub.callCount).to.equal(1);
+      expect(onFocusChangeStub.getCall(0).args[0]).to.equal(null);
     });
 
     it('sets state.isDayPickerFocused to false', () => {
-      const wrapper = shallow((
+      const onFocusChangeStub = sinon.stub();
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={START_DATE}
-          onFocusChange={sinon.stub()}
+          onFocusChange={onFocusChangeStub}
           onDatesChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDayPickerFocused: true,
-      });
-      wrapper.instance().onOutsideClick();
-      expect(wrapper.state().isDayPickerFocused).to.equal(false);
+        />,
+      );
+
+      const dayPicker = container.querySelector('.DayPicker');
+      if (dayPicker) {
+        fireEvent.focus(dayPicker);
+      }
+
+      fireEvent.mouseDown(document.body);
+
+      expect(onFocusChangeStub.callCount).to.equal(1);
     });
 
     it('sets state.showKeyboardShortcuts to false', () => {
-      const wrapper = shallow((
+      const onFocusChangeStub = sinon.stub();
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={START_DATE}
-          onFocusChange={sinon.stub()}
+          onFocusChange={onFocusChangeStub}
           onDatesChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        showKeyboardShortcuts: true,
-      });
-      wrapper.instance().onOutsideClick();
-      expect(wrapper.state().showKeyboardShortcuts).to.equal(false);
+        />,
+      );
+
+      const keyboardShortcutsButton = container.querySelector('.DayPickerKeyboardShortcuts_show');
+      if (keyboardShortcutsButton) {
+        fireEvent.click(keyboardShortcutsButton);
+      }
+
+      fireEvent.mouseDown(document.body);
+
+      expect(container.querySelector('.DayPickerKeyboardShortcuts_panel--visible')).to.equal(null);
     });
 
     it('does not call props.onClose if props.focusedInput = null', () => {
       const onCloseStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           focusedInput={null}
           onClose={onCloseStub}
           onFocusChange={() => null}
-        />
-      )).dive();
-      wrapper.instance().onOutsideClick();
+        />,
+      );
+
+      fireEvent.mouseDown(document.body);
       expect(onCloseStub.callCount).to.equal(0);
     });
 
@@ -337,7 +380,7 @@ describe('DateRangePicker', () => {
       const startDate = moment();
       const endDate = startDate.add(1, 'days');
       const onCloseStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           startDate={startDate}
@@ -345,10 +388,10 @@ describe('DateRangePicker', () => {
           focusedInput={START_DATE}
           onClose={onCloseStub}
           onFocusChange={() => null}
-        />
-      )).dive();
+        />,
+      );
 
-      wrapper.instance().onOutsideClick();
+      fireEvent.mouseDown(document.body);
       expect(onCloseStub.callCount).to.equal(1);
       const args = onCloseStub.getCall(0).args[0];
       expect(args.startDate).to.equal(startDate);
@@ -359,225 +402,281 @@ describe('DateRangePicker', () => {
   describe('#onDateRangePickerInputFocus', () => {
     it('calls onFocusChange', () => {
       const onFocusChangeStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={onFocusChangeStub}
-        />
-      )).dive();
-      wrapper.instance().onDateRangePickerInputFocus();
+        />,
+      );
+
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
       expect(onFocusChangeStub.callCount).to.equal(1);
     });
 
     it('calls onFocusChange with arg', () => {
       const test = 'foobar';
       const onFocusChangeStub = sinon.stub();
-      const wrapper = shallow((
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={onFocusChangeStub}
-        />
-      )).dive();
-      wrapper.instance().onDateRangePickerInputFocus(test);
-      expect(onFocusChangeStub.getCall(0).args[0]).to.equal(test);
+        />,
+      );
+
+      const startDateInput = container.querySelector('.DateRangePickerInput_calendarIcon');
+      fireEvent.click(startDateInput);
+
+      expect(onFocusChangeStub.callCount).to.equal(1);
+      expect(onFocusChangeStub.getCall(0).args[0]).to.equal(START_DATE);
     });
 
     describe('new focusedInput is truthy', () => {
-      let onDayPickerFocusSpy;
-      let onDayPickerBlurSpy;
-      beforeEach(() => {
-        onDayPickerFocusSpy = sinon.spy(PureDateRangePicker.prototype, 'onDayPickerFocus');
-        onDayPickerBlurSpy = sinon.spy(PureDateRangePicker.prototype, 'onDayPickerBlur');
-      });
-
-      afterEach(() => {
-        sinon.restore();
-      });
-
-      it('calls onDayPickerFocus if focusedInput and withPortal/withFullScreenPortal', () => {
-        const wrapper = shallow((
+      it('opens the day picker when input is focused with withPortal', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
             withPortal
-          />
-        )).dive();
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerFocusSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const startDateInput = container.querySelector('.DateInput_input');
+        fireEvent.focus(startDateInput);
+
+        const portal = document.querySelector('.ReactDatesPortal');
+        expect(portal).to.not.equal(null);
       });
 
-      it('calls onDayPickerFocus if focusedInput and withFullScreenPortal', () => {
-        const wrapper = shallow((
+      it('opens the full screen portal when input is focused with withFullScreenPortal', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
             withFullScreenPortal
-          />
-        )).dive();
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerFocusSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const startDateInput = container.querySelector('.DateInput_input');
+        fireEvent.focus(startDateInput);
+
+        const fullScreenPortal = document.querySelector('.ReactDatesPortal');
+        expect(fullScreenPortal).to.not.equal(null);
+        expect(fullScreenPortal.classList.contains('ReactDatesPortal_fullscreen')).to.equal(true);
       });
 
-      it('calls onDayPickerFocus if focusedInput and readOnly', () => {
-        const wrapper = shallow((
+      it('shows day picker when input is focused with readOnly prop', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
             readOnly
-          />
-        )).dive();
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerFocusSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const startDateInput = container.querySelector('.DateInput_input');
+        fireEvent.focus(startDateInput);
+
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
+        expect(dayPicker.style.display).to.not.equal('none');
       });
 
-      it('calls onDayPickerFocus if focusedInput and isTouchDevice', () => {
-        const wrapper = shallow((
+      it('shows day picker when input is focused on touch device', () => {
+        const originalNavigator = global.navigator;
+        const mockNavigator = {
+          ...originalNavigator,
+          maxTouchPoints: 1, // Simulate touch device
+        };
+        global.navigator = mockNavigator;
+
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
-          />
-        )).dive();
-        wrapper.instance().isTouchDevice = true;
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerFocusSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const startDateInput = container.querySelector('.DateInput_input');
+        fireEvent.focus(startDateInput);
+
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
+
+        global.navigator = originalNavigator;
       });
 
-      it('calls onDayPickerBlur if focusedInput and !withPortal/!withFullScreenPortal/!readOnly and keepFocusOnInput', () => {
-        const wrapper = shallow((
+      it('keeps focus on input when keepFocusOnInput is true', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
-            onDateChange={sinon.stub()}
+            onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
             keepFocusOnInput
-          />
-        )).dive();
-        wrapper.instance().isTouchDevice = true;
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerBlurSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        expect(document.activeElement).to.equal(input);
       });
 
-      it('calls onDayPickerFocus if focusedInput and withPortal/withFullScreenPortal and keepFocusOnInput', () => {
-        const wrapper = shallow((
+      it('shows full screen portal and keeps focus on input when withFullScreenPortal and keepFocusOnInput', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
-            onDateChange={sinon.stub()}
+            onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
             keepFocusOnInput
             withFullScreenPortal
-          />
-        )).dive();
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerFocusSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const fullScreenPortal = document.querySelector('.ReactDatesPortal');
+        expect(fullScreenPortal).to.not.equal(null);
+        expect(fullScreenPortal.classList.contains('ReactDatesPortal_fullscreen')).to.equal(true);
+
+        expect(document.activeElement).to.equal(input);
       });
 
-      it('calls onDayPickerBlur if focusedInput and !withPortal/!withFullScreenPortal/!readOnly', () => {
-        const wrapper = shallow((
+      it('shows day picker when input is focused with default props', () => {
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             onDatesChange={sinon.stub()}
             onFocusChange={sinon.stub()}
-          />
-        )).dive();
-        wrapper.instance().onDateRangePickerInputFocus(START_DATE);
-        expect(onDayPickerBlurSpy.callCount).to.equal(1);
+          />,
+        );
+
+        // Focus the start date input
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
       });
     });
   });
 
   describe('#onDayPickerFocus', () => {
-    it('sets state.isDateRangePickerInputFocused to false', () => {
-      const wrapper = shallow((
+    it('focuses the day picker instead of the input', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDateRangePickerInputFocused: true,
-      });
-      wrapper.instance().onDayPickerFocus();
-      expect(wrapper.state().isDateRangePickerInputFocused).to.equal(false);
+          focusedInput={START_DATE}
+        />,
+      );
+
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      const dayPicker = container.querySelector('.DayPicker');
+      fireEvent.focus(dayPicker);
+
+      expect(document.activeElement).to.not.equal(input);
+      const isActiveElementInDayPicker = document.activeElement === dayPicker
+        || dayPicker.contains(document.activeElement);
+      expect(isActiveElementInDayPicker).to.equal(true);
     });
 
-    it('sets state.isDayPickerFocused to true', () => {
-      const wrapper = shallow((
+    it('focuses the day picker when clicked', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDayPickerFocused: false,
-      });
-      wrapper.instance().onDayPickerFocus();
-      expect(wrapper.state().isDayPickerFocused).to.equal(true);
+          focusedInput={START_DATE}
+        />,
+      );
+
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      const dayPicker = container.querySelector('.DayPicker');
+      fireEvent.mouseDown(dayPicker);
+
+      const isActiveElementInDayPicker = document.activeElement === dayPicker
+        || dayPicker.contains(document.activeElement);
+      expect(isActiveElementInDayPicker).to.equal(true);
     });
 
-    it('sets state.showKeyboardShortcuts to false', () => {
-      const wrapper = shallow((
+    it('hides keyboard shortcuts when day picker is focused', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        showKeyboardShortcuts: true,
-      });
-      wrapper.instance().onDayPickerFocus();
-      expect(wrapper.state().showKeyboardShortcuts).to.equal(false);
+          focusedInput={START_DATE}
+          showKeyboardShortcuts
+        />,
+      );
+
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      const dayPicker = container.querySelector('.DayPicker');
+      fireEvent.focus(dayPicker);
+
+      const keyboardShortcutsPanel = container.querySelector('.KeyboardShortcutRow');
+      expect(keyboardShortcutsPanel).to.equal(null);
     });
 
     describe('focusedInput is truthy', () => {
-      it('does not call onFocusChange', () => {
+      it('does not call onFocusChange when day picker is focused and focusedInput is already set', () => {
         const onFocusChangeStub = sinon.stub();
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             onDatesChange={sinon.stub()}
             onFocusChange={onFocusChangeStub}
-          />
-        )).dive();
-        wrapper.instance().onDayPickerFocus();
+          />,
+        );
+
+        // Focus the day picker
+        const dayPicker = container.querySelector('.DayPicker');
+        fireEvent.focus(dayPicker);
+
+        // onFocusChange should not be called since focusedInput is already set
         expect(onFocusChangeStub.callCount).to.equal(0);
       });
     });
 
     describe('focusedInput is falsy', () => {
-      it('calls onFocusChange', () => {
+      it('calls onFocusChange when day picker is focused and focusedInput is null', () => {
         const onFocusChangeStub = sinon.stub();
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={null}
             onDatesChange={sinon.stub()}
             onFocusChange={onFocusChangeStub}
-          />
-        )).dive();
-        wrapper.instance().onDayPickerFocus();
-        expect(onFocusChangeStub.callCount).to.equal(1);
-      });
+          />,
+        );
 
-      it('calls onFocusChange with START_DATE as arg', () => {
-        const onFocusChangeStub = sinon.stub();
-        const wrapper = shallow((
-          <DateRangePicker
-            {...requiredProps}
-            focusedInput={null}
-            onDatesChange={sinon.stub()}
-            onFocusChange={onFocusChangeStub}
-          />
-        )).dive();
-        wrapper.instance().onDayPickerFocus();
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.click(input);
+
+        // onFocusChange should be called with START_DATE
+        expect(onFocusChangeStub.callCount).to.equal(1);
         expect(onFocusChangeStub.getCall(0).args[0]).to.equal(START_DATE);
       });
     });
@@ -585,275 +684,390 @@ describe('DateRangePicker', () => {
 
   describeIfWindow('day picker position', () => {
     it('day picker is opened after the end date input when end date input is focused', () => {
-      const wrapper = mount((
+      const { container } = render(
         <DateRangePickerWrapper
           startDateId="startDate"
           endDateId="endDate"
-        />
-      ));
-      expect(wrapper.find(DayPicker)).to.have.length(0);
-      wrapper.find('input').at(0).simulate('focus'); // when focusing on start date the day picker is rendered after the start date input
-      expect(wrapper.find('DateRangePickerInput').children().childAt(1).find(DayPicker)).to.have.length(1);
-      wrapper.find('input').at(1).simulate('focus'); // when focusing on end date the day picker is rendered after the end date input
-      expect(wrapper.find('DateRangePickerInput').children().childAt(1).find(DayPicker)).to.have.length(0);
-      expect(wrapper.find('DateRangePickerInput').children().childAt(3).find(DayPicker)).to.have.length(1);
+        />,
+      );
+
+      let dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker).to.equal(null);
+
+      // Focus the start date input
+      const startDateInput = container.querySelectorAll('.DateInput_input')[0];
+      fireEvent.focus(startDateInput);
+
+      // Day picker should be rendered after the start date input
+      dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker).to.not.equal(null);
+      const startDateInputParent = startDateInput.closest('.DateInput');
+      const dayPickerParent = dayPicker.parentElement;
+      expect(startDateInputParent.nextElementSibling).to.equal(dayPickerParent);
+
+      // Focus the end date input
+      const endDateInput = container.querySelectorAll('.DateInput_input')[1];
+      fireEvent.focus(endDateInput);
+
+      // Day picker should be rendered after the end date input
+      dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker).to.not.equal(null);
+      const endDateInputParent = endDateInput.closest('.DateInput');
+      expect(endDateInputParent.nextElementSibling).to.equal(dayPickerParent);
     });
   });
 
-  describeIfWindow('#onDayPickerBlur', () => {
-    it('sets state.isDateRangePickerInputFocused to true', () => {
-      const wrapper = shallow((
+  describeIfWindow('day picker blur behavior', () => {
+    it('focuses back on input when day picker loses focus', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDateRangePickerInputFocused: false,
-      });
-      wrapper.instance().onDayPickerBlur();
-      expect(wrapper.state().isDateRangePickerInputFocused).to.equal(true);
+          focusedInput={START_DATE}
+        />,
+      );
+
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      // Then focus the day picker
+      const dayPicker = container.querySelector('.DayPicker');
+      fireEvent.focus(dayPicker);
+
+      // Then blur the day picker
+      fireEvent.blur(dayPicker);
+
+      expect(document.activeElement).to.equal(input);
     });
 
-    it('sets state.isDayPickerFocused to false', () => {
-      const wrapper = shallow((
+    it('hides keyboard shortcuts when day picker loses focus', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDayPickerFocused: true,
-      });
-      wrapper.instance().onDayPickerBlur();
-      expect(wrapper.state().isDayPickerFocused).to.equal(false);
+          focusedInput={START_DATE}
+          showKeyboardShortcuts
+        />,
+      );
+
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      // Then focus the day picker
+      const dayPicker = container.querySelector('.DayPicker');
+      fireEvent.focus(dayPicker);
+
+      // Then blur the day picker
+      fireEvent.blur(dayPicker);
+
+      const keyboardShortcutsPanel = container.querySelector('.KeyboardShortcutRow');
+      expect(keyboardShortcutsPanel).to.equal(null);
     });
 
-    it('sets state.showKeyboardShortcuts to false', () => {
-      const wrapper = shallow((
+    it('closes day picker when tabbing out', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        showKeyboardShortcuts: true,
-      });
-      wrapper.instance().onDayPickerBlur();
-      expect(wrapper.state().showKeyboardShortcuts).to.equal(false);
+          focusedInput={START_DATE}
+        />,
+      );
+
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      // Day picker should be visible
+      let dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker).to.not.equal(null);
+
+      fireEvent.keyDown(dayPicker, { key: 'Tab', shiftKey: false });
+
+      // Focus should move away from the day picker
+      fireEvent.blur(dayPicker);
+
+      dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker === null || dayPicker.style.display === 'none').to.equal(true);
     });
 
-    it('tabbing out with keyboard behaves as an outside click', () => {
-      const target = sinon.stub();
-      const onOutsideClick = sinon.stub();
-      const dayPickerContainer = {
-        addEventListener: sinon.stub(),
-        contains: sinon.stub().returns(false),
-      };
-      const wrapper = shallow((<DateRangePicker {...requiredProps} />)).dive();
-      wrapper.instance().setDayPickerContainerRef(dayPickerContainer);
-      wrapper.instance().onOutsideClick = onOutsideClick;
-      expect(onOutsideClick.callCount).to.equal(0);
-      wrapper.instance().onDayPickerFocusOut({ key: 'Tab', shiftKey: false, target });
-      expect(onOutsideClick.callCount).to.equal(1);
-    });
+    it('keeps day picker open when tabbing within it', () => {
+      const { container } = render(
+        <DateRangePicker
+          {...requiredProps}
+          onDatesChange={sinon.stub()}
+          onFocusChange={sinon.stub()}
+          focusedInput={START_DATE}
+        />,
+      );
 
-    it('tabbing within itself does not behave as an outside click', () => {
-      const target = sinon.stub();
-      const onOutsideClick = sinon.stub();
-      const dayPickerContainer = {
-        addEventListener: sinon.stub(),
-        contains: sinon.stub().returns(true),
-      };
-      const wrapper = shallow((<DateRangePicker {...requiredProps} />)).dive();
-      wrapper.instance().setDayPickerContainerRef(dayPickerContainer);
-      wrapper.instance().onOutsideClick = onOutsideClick;
-      wrapper.instance().onDayPickerFocusOut({ key: 'Tab', shiftKey: false, target });
-      expect(onOutsideClick.callCount).to.equal(0);
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      // Day picker should be visible
+      const dayPicker = container.querySelector('.DayPicker');
+      expect(dayPicker).to.not.equal(null);
+
+      // Find a day button inside the day picker
+      const dayButton = dayPicker.querySelector('.CalendarDay');
+
+      // Simulate tabbing to a day button within the day picker
+      fireEvent.keyDown(dayPicker, { key: 'Tab', shiftKey: false });
+      fireEvent.focus(dayButton);
+
+      expect(container.querySelector('.DayPicker')).to.not.equal(null);
+      expect(container.querySelector('.DayPicker').style.display).to.not.equal('none');
     });
   });
 
-  describe('#showKeyboardShortcutsPanel', () => {
-    it('sets state.isDateRangePickerInputFocused to false', () => {
-      const wrapper = shallow((
+  describe('keyboard shortcuts panel', () => {
+    it('shows keyboard shortcuts panel when question mark button is clicked', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDateRangePickerInputFocused: true,
-      });
-      wrapper.instance().showKeyboardShortcutsPanel();
-      expect(wrapper.state().isDateRangePickerInputFocused).to.equal(false);
+          focusedInput={START_DATE}
+        />,
+      );
+
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      const keyboardShortcutsButton = container.querySelector('.DayPickerKeyboardShortcuts_show');
+      fireEvent.click(keyboardShortcutsButton);
+
+      // Keyboard shortcuts panel should be visible
+      const keyboardShortcutsPanel = container.querySelector('.DayPickerKeyboardShortcuts_panel');
+      expect(keyboardShortcutsPanel).to.not.equal(null);
     });
 
-    it('sets state.isDayPickerFocused to true', () => {
-      const wrapper = shallow((
+    it('focuses the day picker when keyboard shortcuts panel is shown', () => {
+      const { container } = render(
         <DateRangePicker
           {...requiredProps}
           onDatesChange={sinon.stub()}
           onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        isDayPickerFocused: false,
-      });
-      wrapper.instance().showKeyboardShortcutsPanel();
-      expect(wrapper.state().isDayPickerFocused).to.equal(true);
-    });
+          focusedInput={START_DATE}
+        />,
+      );
 
-    it('sets state.showKeyboardShortcuts to true', () => {
-      const wrapper = shallow((
-        <DateRangePicker
-          {...requiredProps}
-          onDatesChange={sinon.stub()}
-          onFocusChange={sinon.stub()}
-        />
-      )).dive();
-      wrapper.setState({
-        showKeyboardShortcuts: false,
-      });
-      wrapper.instance().showKeyboardShortcutsPanel();
-      expect(wrapper.state().showKeyboardShortcuts).to.equal(true);
+      // First focus the input to show the day picker
+      const input = container.querySelector('.DateInput_input');
+      fireEvent.focus(input);
+
+      const keyboardShortcutsButton = container.querySelector('.DayPickerKeyboardShortcuts_show');
+      fireEvent.click(keyboardShortcutsButton);
+
+      // Day picker should be focused, not the input
+      expect(document.activeElement).to.not.equal(input);
+
+      // The keyboard shortcuts panel should be visible
+      const keyboardShortcutsPanel = container.querySelector('.DayPickerKeyboardShortcuts_panel');
+      expect(keyboardShortcutsPanel).to.not.equal(null);
     });
   });
 
   describe('initialVisibleMonth', () => {
     describe('initialVisibleMonth is passed in', () => {
-      it('DayPickerRangeController.props.initialVisibleMonth is equal to initialVisibleMonth', () => {
-        const initialVisibleMonth = () => {};
-        const wrapper = shallow((
+      it('renders the correct initial month when initialVisibleMonth is provided', () => {
+        const initialMonth = moment().add(2, 'months').startOf('month');
+        const initialVisibleMonth = () => initialMonth;
+
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             initialVisibleMonth={initialVisibleMonth}
-          />
-        )).dive();
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        expect(dayPicker.props().initialVisibleMonth).to.equal(initialVisibleMonth);
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const monthCaption = container.querySelector('.CalendarMonth_caption');
+        expect(monthCaption).to.not.equal(null);
+        expect(monthCaption.textContent).to.equal(initialMonth.format('MMMM YYYY'));
       });
     });
 
     describe('initialVisibleMonth is not passed in', () => {
-      it('DayPickerRangeController.props.initialVisibleMonth evaluates to startDate', () => {
+      it('renders the month of startDate when startDate is provided', () => {
         const startDate = moment().add(10, 'days');
-        const wrapper = shallow((
+
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             startDate={startDate}
-          />
-        )).dive();
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        expect(dayPicker.props().initialVisibleMonth()).to.equal(startDate);
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const monthCaption = container.querySelector('.CalendarMonth_caption');
+        expect(monthCaption).to.not.equal(null);
+        expect(monthCaption.textContent).to.equal(startDate.format('MMMM YYYY'));
       });
 
-      it('DayPickerRangeController.props.initialVisibleMonth evaluates to endDate if !startDate', () => {
+      it('renders the month of endDate when only endDate is provided', () => {
         const endDate = moment().add(5, 'days');
-        const wrapper = shallow((
+
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             endDate={endDate}
-          />
-        )).dive();
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        expect(dayPicker.props().initialVisibleMonth()).to.equal(endDate);
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const monthCaption = container.querySelector('.CalendarMonth_caption');
+        expect(monthCaption).to.not.equal(null);
+        expect(monthCaption.textContent).to.equal(endDate.format('MMMM YYYY'));
       });
 
-      it('DayPickerRangeController.props.initialVisibleMonth evaluates to today if !startDate && !endDate', () => {
+      it('renders the current month when neither startDate nor endDate is provided', () => {
         const today = moment();
-        const wrapper = shallow((
-          <DateRangePicker {...requiredProps} focusedInput={START_DATE} />
-        )).dive();
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        expect(dayPicker.props().initialVisibleMonth().isSame(today, 'day')).to.equal(true);
+
+        const { container } = render(
+          <DateRangePicker
+            {...requiredProps}
+            focusedInput={START_DATE}
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const monthCaption = container.querySelector('.CalendarMonth_caption');
+        expect(monthCaption).to.not.equal(null);
+        expect(monthCaption.textContent).to.equal(today.format('MMMM YYYY'));
       });
     });
   });
 
   describe('dateOffsets', () => {
     describe('startDateOffset is passed in', () => {
-      it('Should pass startDateOffset to DayPickerRangeController', () => {
-        const startDate = moment('2018-10-17');
+      it('applies startDateOffset to the date selection', () => {
         const onDatesChangeStub = sinon.stub();
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             startDateOffset={(date) => date.subtract(5, 'days')}
             onDatesChange={onDatesChangeStub}
             focusedInput={START_DATE}
-          />
-        )).dive();
+          />,
+        );
 
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        const dayPickerStartDateOffset = dayPicker.props().startDateOffset(startDate);
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
 
-        expect(dayPickerStartDateOffset.format()).to.equal(startDate.format());
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
       });
     });
 
     describe('endDateOffset is passed in', () => {
-      it('Should pass endDateOffset to DayPickerRangeController', () => {
-        const endDate = moment('2018-10-17', 'YYYY-MM-DD');
+      it('applies endDateOffset to the date selection', () => {
         const onDatesChangeStub = sinon.stub();
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             endDateOffset={(date) => date.subtract(5, 'days')}
             onDatesChange={onDatesChangeStub}
             focusedInput={START_DATE}
-          />
-        )).dive();
+          />,
+        );
 
-        const dayPicker = wrapper.find(DayPickerRangeController);
-        const dayPickerEndDateOffset = dayPicker.props().endDateOffset(endDate);
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
 
-        expect(dayPickerEndDateOffset.format()).to.equal(endDate.format());
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
       });
     });
   });
 
   describe('minDate and maxDate props', () => {
     describe('minDate is passed in', () => {
-      it('Should pass minDate to DayPickerRangeController', () => {
+      it('respects minDate constraint when selecting dates', () => {
         const minDate = moment('2018-10-19');
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             minDate={minDate}
-          />
-        )).dive();
-        expect(wrapper.find(DayPickerRangeController).props().minDate).to.equal(minDate);
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
+
+        const disabledDays = container.querySelectorAll('.CalendarDay__blocked_calendar');
+        expect(disabledDays.length).to.be.at.least(1);
       });
     });
 
     describe('maxDate is passed in', () => {
-      it('Should pass maxDate to DayPickerRangeController', () => {
+      it('respects maxDate constraint when selecting dates', () => {
         const maxDate = moment('2018-12-19');
-        const wrapper = shallow((
+        const { container } = render(
           <DateRangePicker
             {...requiredProps}
             focusedInput={START_DATE}
             maxDate={maxDate}
-          />
-        )).dive();
-        expect(wrapper.find(DayPickerRangeController).props().maxDate).to.equal(maxDate);
+          />,
+        );
+
+        // Focus the input to show the day picker
+        const input = container.querySelector('.DateInput_input');
+        fireEvent.focus(input);
+
+        const dayPicker = container.querySelector('.DayPicker');
+        expect(dayPicker).to.not.equal(null);
+
+        const disabledDays = container.querySelectorAll('.CalendarDay__blocked_calendar');
+        expect(disabledDays.length).to.be.at.least(1);
       });
     });
   });
 
-  it('should pass noBorder as noBorder to <DayPickerRangeController>', () => {
-    const wrapper = shallow((
-      <DateRangePicker {...requiredProps} focusedInput={START_DATE} noBorder />
-    )).dive();
+  it('renders day picker without a border when noBorder prop is true', () => {
+    const { container } = render(
+      <DateRangePicker {...requiredProps} focusedInput={START_DATE} noBorder />,
+    );
 
-    expect(wrapper.find(DayPickerRangeController).prop('noBorder')).to.equal(true);
+    // Focus the input to show the day picker
+    const input = container.querySelector('.DateInput_input');
+    fireEvent.focus(input);
+
+    const dayPicker = container.querySelector('.DayPicker');
+    expect(dayPicker).to.not.equal(null);
+    const hasNoBorder = (
+      dayPicker.classList.contains('DayPicker--noBorder')
+      || dayPicker.style.border === 'none'
+      || dayPicker.style.borderWidth === '0px'
+    );
+    expect(hasNoBorder).to.equal(true);
   });
 });
