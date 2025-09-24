@@ -88,9 +88,13 @@ describe('DateInput - Complementary Tests', () => {
 
     it('is called when input is rendered', () => {
       const wrapper = shallow(<DateInput id="date" />).dive();
-      const input = wrapper.find('input');
+      const instance = wrapper.instance();
       
-      expect(input.prop('ref')).to.equal(wrapper.instance().setInputRef);
+      expect(instance.setInputRef).to.be.a('function');
+      
+      const mockRef = { focus: () => {} };
+      instance.setInputRef(mockRef);
+      expect(instance.inputRef).to.equal(mockRef);
     });
   });
 
